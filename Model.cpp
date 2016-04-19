@@ -5,6 +5,11 @@
 
 #include "Model.h"
 
+Model::Model(float f) {
+    this->number = f;
+    this->int_number = reinterpret_cast<unsigned int*>(&f);
+}
+
 //wpisany ciąg zer i jedynek przekształca w int
 unsigned int Model::insert(string str) {
     unsigned int value = bitset<numeric_limits<unsigned int>::digits>(str).to_ulong();
@@ -148,6 +153,22 @@ float Model::add(unsigned int fpu1, unsigned int fpu2) {
 
     return conv_value;
 }
+
+Model::Model() {
+
+}
+
+Model::~Model() {
+
+}
+
+
+
+
+
+
+
+
 
 /*float Model::multiply(unsigned int fpu1, unsigned int fpu2) {
     unsigned int idx1 = index(fpu1);

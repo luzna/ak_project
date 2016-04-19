@@ -15,7 +15,12 @@ using namespace std;
 
 
 class Model {
+    float number;
+    unsigned int *int_number;
 
+    public:Model();
+    public: Model(float f);
+    public: ~Model();
 
     public: unsigned int insert(string str);
     public: string ToString(unsigned int number);
