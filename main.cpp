@@ -5,18 +5,14 @@
 using namespace std;
 
 int main() {
-    Model model;
-    unsigned int nr = model.insert("00111110000000000000000000000000");		//0.125
-    unsigned int nr2 = model.insert("01000001011100000000000000000000");
 
-
-    cout << model.convert(nr) << endl;
-    cout << model.convert(nr2) << endl;
-    //cout << model.add(nr, nr2);
-
-    float f = 0.125;
-    unsigned int *number = reinterpret_cast<unsigned int*>(&f);
-    cout << model.ToString(*number);
+	float f = 1.125;
+	float f2 = 4.5;
+	Model model(f);
+	Model model2(f2);
+	Model *model3 = model.add(model2);
+	cout << (*model3).get_number();
+	cin.get();
 
     return 0;
 }

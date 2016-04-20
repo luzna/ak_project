@@ -7,7 +7,24 @@
 
 Model::Model(float f) {
     this->number = f;
-    this->int_number = reinterpret_cast<unsigned int*>(&f);
+    this->int_number = reinterpret_cast<unsigned int*>(&number);
+}
+
+Model::Model(unsigned int i)
+{
+	int_number = new unsigned int();
+	*(this->int_number) = i;
+	this->number = convert();
+}
+
+float Model::get_number()
+{
+	return number;
+}
+
+unsigned int* Model::get_int_number()
+{
+	return int_number;
 }
 
 //wpisany ciąg zer i jedynek przekształca w int
@@ -48,110 +65,139 @@ int Model::expo(int a, int b) {
     return sum;
 }
 
+bool Model::sign() {
+	unsigned int mask = expo(2, 31);
+	bool sign;
+	sign = *int_number&mask;
+	if (sign)
+		sign = 1;
+	else sign = 0;
+
+	return sign;
+}
+
+unsigned int Model::index() {
+	unsigned int mask;
+	unsigned int index = 0;
+	unsigned int pos;
+
+	for (int i = 30; i >= 23; i--)
+	{
+		mask = pow(2.0, i);
+		pos = *int_number&mask;
+
+		if (pos)
+			index |= pos;
+	}
+
+	index = index >> 23;
+	return index;
+}
+
+unsigned int Model::multiplier() {
+	unsigned int mask;
+	unsigned int mpr = 0;
+	unsigned int pos;
+
+	for (int i = 22; i >= 0; i--)
+	{
+		mask = expo(2, i);
+		pos = *int_number&mask;
+
+		if (pos)
+			mpr |= pos;
+	}
+	return mpr;
+}
+
 //obliczanie wartości liczby
-float Model::convert(unsigned int n) {
-    int x = n >> 31;
-    int y = x & 1;
-    float f = expo(-1, y);
-    x = n >> 23;
-    y = x & 0xff;
-    f *= pow(2, y - 127);
-    float total = 0;
-    int power = -23;
-    for (int i = 0; i < 23; i++)
-    {
-        x = n << i;
-        total += (float)(x & 1) * (float)pow(2.0, power);
-        power++;
-    }
-    total += 1;
-    f *= total;
-    return f;
+float Model::convert() {
+
+	float f;
+	bool s = sign();
+	int i = (int)index();
+	unsigned int m = multiplier();
+
+	if (s)
+		f = -1;
+	else
+		f = 1;
+
+	f *= pow(2, i - 127);
+
+	float total = 0;
+	int power = -23;
+	for (int i = 0; i < 23; i++)
+	{
+		unsigned int x = m >> i;
+		total += (float)(x & 1) * (float)pow(2.0, power);
+		power++;
+	}
+	total += 1;
+	f *= total;
+
+	return f;
 }
 
-bool Model::sign(unsigned int number) {
-    unsigned int mask = expo(2, 31);
-    bool sign;
-    sign = number&mask;
-    if (sign)
-        sign = 1;
-    else sign = 0;
+//dodawanie
+Model* Model::add(Model m) {
 
-    return sign;
-}
-
-unsigned int Model::index(unsigned int number) {
-    unsigned int mask;
-    unsigned int index = 0;
-    unsigned int pos;
-
-    for (int i = 30; i >= 23; i--)
-    {
-        mask = pow(2.0, i);
-        pos = number&mask;
-
-        if (pos)
-            index |= pos;
-    }
-
-    index = index >> 23;
-    return index;
-}
-
-unsigned int Model::multiplier(unsigned int number) {
-    unsigned int mask;
-    unsigned int mpr = 0;
-    unsigned int pos;
-
-    for (int i = 22; i >= 0; i--)
-    {
-        mask = expo(2, i);
-        pos = number&mask;
-
-        if (pos)
-            mpr |= pos;
-    }
-    return mpr;
-}
-
-float Model::add(unsigned int fpu1, unsigned int fpu2) {
-    unsigned int idx1 = index(fpu1);
-    unsigned int idx2 = index(fpu2);
+    unsigned int idx1 = index();
+    unsigned int idx2 = m.index();
     unsigned int higher_idx;
     int dif = 0;
-    unsigned int mpr1 = multiplier(fpu1);
-    unsigned int mpr2 = multiplier(fpu2);
-    bool sign1 = sign(fpu1);
-    bool sign2 = sign(fpu2);
+    unsigned int mpr1 = multiplier();
+    unsigned int mpr2 = m.multiplier();
+    bool sign1 = sign();
+    bool sign2 = m.sign();
+	unsigned int mask;
 
     if (idx1 > idx2)
     {
         higher_idx = idx1;
         dif = higher_idx - idx2;
-        mpr2 = mpr2 << dif;
-
+		
+		//denormalizacja
+        mpr2 = mpr2 >> dif;
+		mask = expo(2, 23 - dif); //jedynka przed przecinkiem
+		mpr2 |= mask;
     }
-    else
+	else if (idx2 > idx1)
     {
         higher_idx = idx2;
         dif = higher_idx - idx1;
-        mpr1 = mpr1 << dif;
+
+		//denormalizacja
+        mpr1 = mpr1 >> dif;
+		mask = expo(2, 23 - dif); //jedynka przed przecinkiem
+		mpr1 |= mask;
     }
+	else
+	{
+		higher_idx = idx2;
+		dif = higher_idx - idx1;
+	}
 
     unsigned int add_mpr = mpr1 + mpr2;
 
-    //float value = add_mpr*pow(2, higher_idx - 127);
-    string sign;
-    if (sign1 || sign2)
-        sign = "1";
-    else
-        sign = "0";
+	//normalizacja wyniku, jeśli większy od dwóch
+	if (dif == 0)
+	{
+		add_mpr = add_mpr >> 1;
+		higher_idx++;
+	}
 
-    string Binary = sign + ToString(higher_idx) + ToString(add_mpr);
-    int value = insert(Binary);
-    float conv_value = convert(value);
+	unsigned int value = 0;
 
-    return conv_value;
+	if (sign1 && sign2)
+		value |= 0x80000000;
+
+	value |= higher_idx << 23;
+	value |= add_mpr;
+    
+	Model *result = new Model(value);
+
+    return result;
 }
 
 Model::Model() {
