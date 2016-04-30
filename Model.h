@@ -37,11 +37,9 @@ class Model {
     public: float convert();
 
     Model* add(Model m);
+	Model* subtract(Model m);
     float multiply(unsigned int fpu1, unsigned int fpu2);
-    float subtract(unsigned int fpu1, unsigned int fpu2);
     float divide(unsigned int fpu1, unsigned int fpu2);
-
-
 };
 
 

@@ -118,23 +118,30 @@ float Model::convert() {
 	int i = (int)index();
 	unsigned int m = multiplier();
 
-	if (s)
-		f = -1;
-	else
-		f = 1;
-
-	f *= pow(2, i - 127);
-
-	float total = 0;
-	int power = -23;
-	for (int i = 0; i < 23; i++)
+	if (i == 0 && m == 0)
 	{
-		unsigned int x = m >> i;
-		total += (float)(x & 1) * (float)pow(2.0, power);
-		power++;
+		f = 0;
 	}
-	total += 1;
-	f *= total;
+	else
+	{
+		if (s)
+			f = -1;
+		else
+			f = 1;
+
+		f *= pow(2, i - 127);
+
+		float total = 0;
+		int power = -23;
+		for (int i = 0; i < 23; i++)
+		{
+			unsigned int x = m >> i;
+			total += (float)(x & 1) * (float)pow(2.0, power);
+			power++;
+		}
+		total += 1;
+		f *= total;
+	}
 
 	return f;
 }
@@ -152,30 +159,46 @@ Model* Model::add(Model m) {
     bool sign2 = m.sign();
 	unsigned int mask;
 
-    if (idx1 > idx2)
-    {
-        higher_idx = idx1;
-        dif = higher_idx - idx2;
-		
-		//denormalizacja
-        mpr2 = mpr2 >> dif;
-		mask = expo(2, 23 - dif); //jedynka przed przecinkiem
-		mpr2 |= mask;
-    }
-	else if (idx2 > idx1)
-    {
-        higher_idx = idx2;
-        dif = higher_idx - idx1;
+	if (sign1 == sign2)
+	{
+		if (idx1 > idx2)
+		{
+			higher_idx = idx1;
+			dif = higher_idx - idx2;
 
-		//denormalizacja
-        mpr1 = mpr1 >> dif;
-		mask = expo(2, 23 - dif); //jedynka przed przecinkiem
-		mpr1 |= mask;
-    }
+			//denormalizacja
+			mpr2 = mpr2 >> dif;
+			mask = expo(2, 23 - dif); //jedynka przed przecinkiem
+			mpr2 |= mask;
+		}
+		else if (idx2 > idx1)
+		{
+			higher_idx = idx2;
+			dif = higher_idx - idx1;
+
+			//denormalizacja
+			mpr1 = mpr1 >> dif;
+			mask = expo(2, 23 - dif); //jedynka przed przecinkiem
+			mpr1 |= mask;
+		}
+		else
+		{
+			higher_idx = idx2;
+			dif = higher_idx - idx1;
+		}
+	}
+	//jeśli składniki mają różne znaki - odejmowanie
+	else if (sign2)
+	{
+		unsigned int i = *m.get_int_number() & 0x7fffffff;
+		Model m2(i);
+		return subtract(m2);
+	}
 	else
 	{
-		higher_idx = idx2;
-		dif = higher_idx - idx1;
+		unsigned int i = *m.get_int_number() | 0x80000000;
+		Model m2(i);
+		return subtract(m2);
 	}
 
     unsigned int add_mpr = mpr1 + mpr2;
@@ -198,6 +221,120 @@ Model* Model::add(Model m) {
 	Model *result = new Model(value);
 
     return result;
+}
+
+//odejmowanie
+Model* Model::subtract(Model m) {
+
+	unsigned int idx1 = index();
+	unsigned int idx2 = m.index();
+	unsigned int higher_idx;
+	unsigned int higher_mpr;
+	unsigned int lower_mpr;
+	int dif = 0;
+	unsigned int mpr1 = multiplier();
+	unsigned int mpr2 = m.multiplier();
+	bool sign1 = sign();
+	bool sign2 = m.sign();
+	bool sign; //znak wyniku
+	unsigned int mask;
+
+	if (sign1 == sign2)
+	{
+		if (idx1 > idx2)
+		{
+			higher_idx = idx1;
+			dif = higher_idx - idx2;
+			sign = sign1; //jeśli pierwsza liczba jest większa znak wyniku taki sam jak składników
+
+			//denormalizacja
+			mpr2 = mpr2 >> dif;
+			mask = expo(2, 23 - dif); //jedynka przed przecinkiem
+			mpr2 |= mask;
+
+			higher_mpr = mpr1;
+			lower_mpr = mpr2;
+		}
+		else if (idx2 > idx1)
+		{
+			higher_idx = idx2;
+			dif = higher_idx - idx1;
+			sign = !sign1; //jeśli pierwsza liczba jest większa znak wyniku przeciwny do znaku składników
+
+			//denormalizacja
+			mpr1 = mpr1 >> dif;
+			mask = expo(2, 23 - dif); //jedynka przed przecinkiem
+			mpr1 |= mask;
+
+			higher_mpr = mpr2;
+			lower_mpr = mpr1;
+		}
+		else
+		{
+			higher_idx = idx2;
+			dif = higher_idx - idx1;
+			
+			if (mpr1 > mpr2)
+			{
+				higher_mpr = mpr1;
+				lower_mpr = mpr2;
+				sign = sign1; //jeśli pierwsza liczba jest większa znak wyniku taki sam jak składników
+			}
+			else
+			{
+				higher_mpr = mpr2;
+				lower_mpr = mpr1;
+				sign = !sign1; //jeśli pierwsza liczba jest większa znak wyniku przeciwny do znaku składników
+			}
+		}
+	}
+	//jeśli składniki mają różne znaki - dodawanie 
+	else if (sign2)
+	{
+		unsigned int i = *m.get_int_number() & 0x7fffffff;
+		Model m2(i);
+		return add(m2);
+	}
+	else
+	{
+		unsigned int i = *m.get_int_number() | 0x80000000;
+		Model m2(i);
+		return add(m2);
+	}
+
+	unsigned int sub_mpr = higher_mpr - lower_mpr;
+
+	//normalizacja wyniku, jeśli mniejszy od 1
+	if ((dif == 0 || ((sub_mpr & 0x00800000) == 0x00800000)) && sub_mpr > 0)
+	{
+		mask = 0x00400000;
+		unsigned bit = 0;
+		while (bit != mask)
+		{
+			bit = sub_mpr & mask;
+			sub_mpr = sub_mpr << 1;
+			higher_idx--;
+		}
+	}
+	else if (sub_mpr == 0)
+	{
+		higher_idx = 0;
+	}
+
+	unsigned int value = 0;
+
+	if (sign)
+		value |= 0x80000000;
+
+	value |= higher_idx << 23;
+
+	mask = 0x007fffff; //maskowanie bitów mnożnika powyżej 23
+	sub_mpr &= mask;
+	value |= sub_mpr;
+
+	Model *result = new Model(value);
+
+	return result;
 }
 
 Model::Model() {
