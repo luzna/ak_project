@@ -12,5 +12,6 @@ Model.o: Model.cpp
 Tests.o: Tests.cpp
 	g++ -c Tests.cpp
 
+
 clean:
 	rm -rf *o fpu
