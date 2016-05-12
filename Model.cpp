@@ -209,6 +209,12 @@ Model* Model::add(Model m) {
 		add_mpr = add_mpr >> 1;
 		higher_idx++;
 	}
+	else if ((add_mpr & 0x00800000) == 0x00800000)
+	{
+		add_mpr &= 0x007fffff;
+		add_mpr = add_mpr >> 1;
+		higher_idx++;
+	}
 
 	unsigned int value = 0;
 

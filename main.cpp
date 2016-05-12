@@ -20,10 +20,10 @@ int main() {
         switch(m)
         {
             case 1: {
-                cout << "Podaj pierwszy składnik dodawania: ";
+                cout << "Podaj pierwszy skladnik dodawania: ";
                 cin >> f;
                 Model model(f);
-                cout << "Podaj drugi składnik dodawania: ";
+                cout << "Podaj drugi skladnik dodawania: ";
                 cin>> f2;
                 Model model2(f2);
                 model3 = model.add(model2);
@@ -31,7 +31,7 @@ int main() {
                 break;
             }
             case 2: {
-                cout << "Podaj odjemną: ";
+                cout << "Podaj odjemna: ";
                 cin >> f;
                 Model model(f);
                 cout << "Podaj odjemnik: ";
