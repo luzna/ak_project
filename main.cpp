@@ -9,11 +9,10 @@ int main() {
     float f, f2;
     Model *model3;
 
-
     int m;
     char sign0;
     do{
-        cout << "MENU \n[1] - dodawanie \n[2] - odejmowanie  ";
+        cout << "MENU \n[1] - dodawanie \n[2] - odejmowanie \n[3] - mnozenie ";
         cin >> m;
         cout << endl;
 
@@ -41,10 +40,18 @@ int main() {
                 cout << "Wynik odejmowania " << f << " - " << f2 << " to " << (*model3).get_number();
                 break;
             }
-            /*case 3:
-                break;
-
-            case 4:
+			case 3: {
+				cout << "Podaj pierwszy skladnik mnozenia: ";
+				cin >> f;
+				Model model(f);
+				cout << "Podaj drugi skladnik mnozenia: ";
+				cin >> f2;
+				Model model2(f2);
+				model3 = model.multiply(model2);
+				cout << "Wynik mnozenia " << f << " * " << f2 << " to " << (*model3).get_number();
+				break;
+			}
+            /*case 4:
                 break;*/
             default:break;
 

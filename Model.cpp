@@ -49,6 +49,11 @@ string Model::ToString(unsigned int number) {
             index += "1";
         else
             index += "0";
+
+		if (i == 31 || i == 23)
+		{
+			index += " ";
+		}
     }
 
     return index;
@@ -153,8 +158,10 @@ Model* Model::add(Model m) {
     unsigned int idx2 = m.index();
     unsigned int higher_idx;
     int dif = 0;
+
     unsigned int mpr1 = multiplier();
     unsigned int mpr2 = m.multiplier();
+
     bool sign1 = sign();
     bool sign2 = m.sign();
 	unsigned int mask;
@@ -235,11 +242,13 @@ Model* Model::subtract(Model m) {
 	unsigned int idx1 = index();
 	unsigned int idx2 = m.index();
 	unsigned int higher_idx;
+	int dif = 0;
+
 	unsigned int higher_mpr;
 	unsigned int lower_mpr;
-	int dif = 0;
 	unsigned int mpr1 = multiplier();
 	unsigned int mpr2 = m.multiplier();
+
 	bool sign1 = sign();
 	bool sign2 = m.sign();
 	bool sign; //znak wyniku
@@ -322,7 +331,7 @@ Model* Model::subtract(Model m) {
 			higher_idx--;
 		}
 	}
-	else if (sub_mpr == 0)
+	else if ((dif == 0 || ((sub_mpr & 0x00800000) == 0x00800000)) && sub_mpr == 0)
 	{
 		higher_idx = 0;
 	}
@@ -334,9 +343,57 @@ Model* Model::subtract(Model m) {
 
 	value |= higher_idx << 23;
 
-	mask = 0x007fffff; //maskowanie bitów mnożnika powyżej 23
-	sub_mpr &= mask;
+	sub_mpr &= 0x007fffff; //maskowanie bitów mnożnika powyżej 23
 	value |= sub_mpr;
+
+	Model *result = new Model(value);
+
+	return result;
+}
+
+Model* Model::multiply(Model m) {
+
+	unsigned int idx1 = index();
+	unsigned int idx2 = m.index();
+	unsigned int idx = idx1 + idx2 - 127;
+
+	unsigned int mpr1 = multiplier();
+	unsigned int mpr2 = m.multiplier();
+	unsigned int mpr;
+
+	bool sign1 = sign();
+	bool sign2 = m.sign();
+
+	bool sign;
+	unsigned int value = 0;
+
+	mpr1 |= 0x00800000;
+	mpr2 |= 0x00800000;
+	mpr = (mpr1>>11) * (mpr2>>11);
+	mpr = mpr >> 1;
+
+	//normalizacja
+	if ((mpr & 0x01000000) == 0x01000000)
+	{
+		mpr = mpr >> 1;
+		idx++;
+	}
+
+	if (sign1 == sign2)
+	{
+		sign = 0;
+	}
+	else
+	{
+		sign = 1;
+	}
+
+	if (sign)
+		value |= 0x80000000;
+
+	value |= idx << 23;
+	mpr &= 0x007fffff;
+	value |= mpr;
 
 	Model *result = new Model(value);
 
@@ -350,37 +407,6 @@ Model::Model() {
 Model::~Model() {
 
 }
-
-
-
-
-
-
-
-
-
-/*float Model::multiply(unsigned int fpu1, unsigned int fpu2) {
-    unsigned int idx1 = index(fpu1);
-    unsigned int idx2 = index(fpu2);
-    unsigned int idx = idx1 + idx2 - 127;
-
-    unsigned int mpr1 = multiplier(fpu1);
-    unsigned int mpr2 = multiplier(fpu2);
-    unsigned int mpr = mpr1*mpr2;
-    mpr = mpr >> 1;
-
-    //cout << ToString(idx1) << endl << ToString(idx2) << endl << ToString(idx) << endl;
-    unsigned int sign_a;
-    if ((sign(fpu1) && sign(fpu2)) || (!sign(fpu1) && !sign(fpu2)))
-        sign_a = 0;
-    else sign_a = 1;
-    float value = conv(sign_a, idx, mpr);
-
-    //if ((sign(fpu1) && sign(fpu2)) || (!sign(fpu1) && !sign(fpu2)))
-    //	value *= -1;
-
-    return value;
-}*/
 
 
 

@@ -38,6 +38,7 @@ class Model {
 
     Model* add(Model m);
 	Model* subtract(Model m);
+	Model* multiply(Model m);
     float multiply(unsigned int fpu1, unsigned int fpu2);
     float divide(unsigned int fpu1, unsigned int fpu2);
 };
