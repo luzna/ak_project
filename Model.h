@@ -15,7 +15,7 @@ using namespace std;
 
 
 class Model {
-    float number;
+    float *number;
 	unsigned int *int_number;
 
     public: Model();
@@ -23,7 +23,7 @@ class Model {
 	public: Model(unsigned int i);
     public: ~Model();
 
-	float get_number();
+	float* get_number();
 	unsigned int* get_int_number();
 
     public: unsigned int insert(string str);
@@ -39,8 +39,9 @@ class Model {
     Model* add(Model m);
 	Model* subtract(Model m);
 	Model* multiply(Model m);
-    float multiply(unsigned int fpu1, unsigned int fpu2);
-    float divide(unsigned int fpu1, unsigned int fpu2);
+	Model* divide(Model m);
+    //float multiply(unsigned int fpu1, unsigned int fpu2);
+    //float divide(unsigned int fpu1, unsigned int fpu2);
 };
 
 

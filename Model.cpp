@@ -6,18 +6,19 @@
 #include "Model.h"
 
 Model::Model(float f) {
-    this->number = f;
-    this->int_number = reinterpret_cast<unsigned int*>(&number);
+	number = new float();
+    *(number) = f;
+    int_number = reinterpret_cast<unsigned int*>(number);
 }
 
 Model::Model(unsigned int i)
 {
 	int_number = new unsigned int();
-	*(this->int_number) = i;
-	this->number = convert();
+	*(int_number) = i;
+	number = reinterpret_cast<float*>(int_number);
 }
 
-float Model::get_number()
+float* Model::get_number()
 {
 	return number;
 }
@@ -377,6 +378,61 @@ Model* Model::multiply(Model m) {
 	{
 		mpr = mpr >> 1;
 		idx++;
+	}
+
+	if (sign1 == sign2)
+	{
+		sign = 0;
+	}
+	else
+	{
+		sign = 1;
+	}
+
+	if (sign)
+		value |= 0x80000000;
+
+	value |= idx << 23;
+	mpr &= 0x007fffff;
+	value |= mpr;
+
+	Model *result = new Model(value);
+
+	return result;
+}
+
+Model* Model::divide(Model m)
+{
+	unsigned int idx1 = index();
+	unsigned int idx2 = m.index();
+	unsigned int idx = idx1 - idx2 + 127;
+
+	unsigned int mpr1 = multiplier();
+	unsigned int mpr2 = m.multiplier();
+	unsigned int mpr;
+
+	bool sign1 = sign();
+	bool sign2 = m.sign();
+
+	bool sign;
+	unsigned int value = 0;
+	unsigned int mask;
+
+	mpr1 |= 0x00800000;
+	mpr2 |= 0x00800000;
+	mpr = mpr1 / mpr2;
+
+	//normalizacja
+	if ((mpr & 0x00800000) != 0x00800000)
+	{
+		mask = 0x00400000;
+		unsigned bit = 0;
+		while (bit != mask)
+		{
+			bit = mpr & mask;
+			mpr = mpr << 1;
+			idx--;
+		}
 	}
 
 	if (sign1 == sign2)
