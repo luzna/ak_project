@@ -368,9 +368,9 @@ Model* Model::multiply(Model m) {
 	bool sign;
 	unsigned int value = 0;
 
-	mpr1 |= 0x00800000;
+	mpr1 |= 0x00800000; //jedynki przed przecinkiem
 	mpr2 |= 0x00800000;
-	mpr = (mpr1>>11) * (mpr2>>11);
+	mpr = (mpr1>>11) * (mpr2>>11); //wynik ma mieć maksymalnie 24 bity
 	mpr = mpr >> 1;
 
 	//normalizacja
@@ -403,9 +403,17 @@ Model* Model::multiply(Model m) {
 
 Model* Model::divide(Model m)
 {
+	/*cout << ToString(*int_number) << endl;
+	cout << ToString(*m.int_number) << endl;*/
+
 	unsigned int idx1 = index();
 	unsigned int idx2 = m.index();
 	unsigned int idx = idx1 - idx2 + 127;
+
+	/*cout << endl;
+	cout << ToString(idx1 << 23) << endl;
+	cout << ToString(idx2 << 23) << endl;
+	cout << ToString(idx << 23) << endl;*/
 
 	unsigned int mpr1 = multiplier();
 	unsigned int mpr2 = m.multiplier();
@@ -418,9 +426,34 @@ Model* Model::divide(Model m)
 	unsigned int value = 0;
 	unsigned int mask;
 
-	mpr1 |= 0x00800000;
+	mpr1 |= 0x00800000; //jedynki przed przecinkiem
 	mpr2 |= 0x00800000;
+
+	/*cout << endl;
+	cout << ToString(mpr1) << endl;
+	cout << ToString(mpr2) << endl;*/
+
+	mask = 1;
+	int count = 0;
+	unsigned bit = mpr2 & mask;
+	while (bit != mask)
+	{
+		bit = mpr2 & mask;
+
+		if (bit != mask)
+		{
+			mpr2 = mpr2 >> 1;
+			count++;
+		}
+	}
+
 	mpr = mpr1 / mpr2;
+	idx += (23 - count);
+
+	/*cout << endl;
+	cout << ToString(mpr1) << endl;
+	cout << ToString(mpr2) << endl;
+	cout << ToString(mpr) << endl;*/
 
 	//normalizacja
 	if ((mpr & 0x00800000) != 0x00800000)
@@ -434,6 +467,8 @@ Model* Model::divide(Model m)
 			idx--;
 		}
 	}
+
+	//cout << ToString(mpr) << endl;
 
 	if (sign1 == sign2)
 	{
@@ -450,6 +485,9 @@ Model* Model::divide(Model m)
 	value |= idx << 23;
 	mpr &= 0x007fffff;
 	value |= mpr;
+
+	/*cout << endl;
+	cout << ToString(value) << endl;*/
 
 	Model *result = new Model(value);
 
