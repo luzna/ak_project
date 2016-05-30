@@ -11,6 +11,7 @@
 #include <bitset>
 #include <limits>
 #include <cstdlib>
+#include <stdint.h>
 using namespace std;
 
 
